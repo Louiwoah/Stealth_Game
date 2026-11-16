@@ -2,7 +2,6 @@
 
 [ext_resource type="Texture2D" uid="uid://kwfljfedgwq5" path="res://assets/stealth-tiles.png" id="1_eeskx"]
 [ext_resource type="PackedScene" uid="uid://d2tchncdyuqc4" path="res://scenes/player.tscn" id="2_86od8"]
-[ext_resource type="Script" uid="uid://k87gcnyqocj1" path="res://scripts/player.gd" id="3_cbqwp"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_86od8"]
 texture = ExtResource("1_eeskx")
@@ -34,4 +33,3 @@ tile_set = SubResource("TileSet_cbqwp")
 
 [node name="Player" parent="." unique_id=1425113821 instance=ExtResource("2_86od8")]
 position = Vector2(120, 104)
-script = ExtResource("3_cbqwp")

@@ -38,6 +38,8 @@ const ICON_EXCLAIM := 23
 var path := PackedVector2Array()         # the waypoints still to walk through
 var path_target := Vector2.INF 
 
+@export var move_turn_speed_degrees: float = 360.0
+
 func _ready() -> void:
 	base_rotation = rotation
 	scan_target = base_rotation + deg_to_rad(scan_angle_degrees)
@@ -57,7 +59,7 @@ func _physics_process(delta: float) -> void:
 	match state:
 		State.PATROL:
 			# walks back to post and starts looking around again
-			if move_towards(home_position, walk_speed):
+			if move_towards(home_position, walk_speed, delta):
 				scan(delta)
 			if sees_player:
 				change_state(State.SUSPICIOUS)
@@ -74,13 +76,13 @@ func _physics_process(delta: float) -> void:
 
 		State.CHASE:
 			#run towards the player
-			move_towards(player.global_position, chase_speed)
+			move_towards(player.global_position, chase_speed, delta)
 			if not sees_player:
 				change_state(State.SEARCH)
 
 		State.SEARCH:
 			#Go to where the player was last seen, then spins slodwly to look around.
-			if move_towards(last_known_position, walk_speed):
+			if move_towards(last_known_position, walk_speed, delta):
 				rotation += deg_to_rad(turn_speed_degrees) * delta
 			if sees_player:
 				change_state(State.CHASE)
@@ -137,9 +139,9 @@ func rotate_vector(v: Vector2, angle: float) -> Vector2:
 	)
 
 
-func turn_towards(target_angle: float, delta: float) -> void:
+func turn_towards(target_angle: float, delta: float, speed_degrees: float = turn_speed_degrees) -> void:
 	var difference := angle_difference(rotation, target_angle)    
-	var max_step := deg_to_rad(turn_speed_degrees) * delta        
+	var max_step := deg_to_rad(speed_degrees) * delta       
 	rotation += clampf(difference, -max_step, max_step)
 
 func scan(delta: float) -> void:
@@ -165,7 +167,7 @@ func get_cone_colour() -> Color:
 		_:
 			return cone_color                    
 
-func move_towards(target: Vector2, speed: float) -> bool:
+func move_towards(target: Vector2, speed: float, delta: float) -> bool:
 	if global_position.distance_to(target) < 4.0:
 		velocity = Vector2.ZERO
 		path.clear()
@@ -182,7 +184,7 @@ func move_towards(target: Vector2, speed: float) -> bool:
 	var next_point: Vector2 = target if path.is_empty() else path[0]
 	var to_next := next_point - global_position
 	velocity = to_next.normalized() * speed
-	rotation = to_next.angle()
+	turn_towards(to_next.angle(), delta, move_turn_speed_degrees)
 	move_and_slide()
 	return false
 

@@ -19,7 +19,7 @@ enum State { PATROL, SUSPICIOUS, CHASE, SEARCH }
 @export var chase_speed: float = 90.0       
 @export var suspicion_time: float = 1.0     #time that the player needs to be seen for to initiate chase 
 @export var give_up_time: float = 2.0       #seconds unseen before a suspicious guard goes back to patrol
-@export var search_time: float = 4.0        #time spent searching before going back on patrol
+@export var search_time: float = 8.0        #time spent searching before going back on patrol
 
 var state: State = State.PATROL
 var state_timer: float = 0.0     # time spent in the current state

@@ -8,6 +8,7 @@ extends CharacterBody2D
 @export var cone_color: Color = Color(1.0, 0.85, 0.3, 0.25)  
 const CONE_SEGMENTS := 16   #how many segments used to split the sector
 
+
 func _physics_process(_delta: float) -> void:
 	#debug test, turns red when the player is seen.
 	if can_see_player():
@@ -27,7 +28,7 @@ func can_see_player() -> bool:
 		return false
 
 	#checks if player is within the cone
-	var facing := Vector2.from_angle(rotation) 
+	var facing := global_transform.x   
 	var half_angle := deg_to_rad(view_angle_degrees / 2.0)
 		
 	if facing.dot(to_player.normalized()) <= cos(half_angle):

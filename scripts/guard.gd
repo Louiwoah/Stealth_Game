@@ -34,6 +34,10 @@ var home_position: Vector2             # where the guard was placed, so it can r
 const ICON_QUESTION := 3 
 const ICON_EXCLAIM := 23
 
+@export var level: LevelMap              # assign the LevelMap node in the Inspector
+var path := PackedVector2Array()         # the waypoints still to walk through
+var path_target := Vector2.INF 
+
 func _ready() -> void:
 	base_rotation = rotation
 	scan_target = base_rotation + deg_to_rad(scan_angle_degrees)
@@ -162,12 +166,23 @@ func get_cone_colour() -> Color:
 			return cone_color                    
 
 func move_towards(target: Vector2, speed: float) -> bool:
-	var to_target := target - global_position
-	if to_target.length() < 4.0: #allows a margin, guard doesnt have to be directly on tile
+	if global_position.distance_to(target) < 4.0:
 		velocity = Vector2.ZERO
+		path.clear()
+		path_target = Vector2.INF
 		return true
-	velocity = to_target.normalized() * speed   
-	rotation = to_target.angle() #faces direction guard is walking in
+	if level != null and target.distance_to(path_target) > 8.0:
+		path = level.find_path(global_position, target)
+		path_target = target
+		if not path.is_empty():
+			path.remove_at(0)
+	if not path.is_empty() and global_position.distance_to(path[0]) < 3.0:
+		path.remove_at(0)
+		
+	var next_point: Vector2 = target if path.is_empty() else path[0]
+	var to_next := next_point - global_position
+	velocity = to_next.normalized() * speed
+	rotation = to_next.angle()
 	move_and_slide()
 	return false
 

@@ -37,7 +37,8 @@ script = ExtResource("2_qgwn0")
 [node name="Player" parent="." unique_id=1425113821 instance=ExtResource("2_86od8")]
 position = Vector2(120, 104)
 
-[node name="guard" parent="." unique_id=331906616 node_paths=PackedStringArray("player") instance=ExtResource("3_cbqwp")]
+[node name="guard" parent="." unique_id=331906616 node_paths=PackedStringArray("player", "level") instance=ExtResource("3_cbqwp")]
 position = Vector2(343, 72)
 rotation = 3.1415927
 player = NodePath("../Player")
+level = NodePath("../LevelMap")

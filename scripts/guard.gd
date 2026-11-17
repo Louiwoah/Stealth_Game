@@ -14,22 +14,56 @@ const CONE_SEGMENTS := 16   #how many segments used to split the sector
 var base_rotation: float    # the direction the guard was placed facing
 var scan_target: float      # the angle the guard is going to turn to
 
+enum State { PATROL, SUSPICIOUS, CHASE, SEARCH }
+
+@export var chase_speed: float = 90.0       
+@export var suspicion_time: float = 1.0     #time that the player needs to be seen for to initiate chase 
+@export var give_up_time: float = 2.0       #seconds unseen before a suspicious guard goes back to patrol
+@export var search_time: float = 4.0        #time spent searching before going back on patrol
+
+var state: State = State.PATROL
+var state_timer: float = 0.0     # time spent in the current state
+var seen_timer: float = 0.0      # total time the player has been seen (for suspicion_time)
+var unseen_timer: float = 0.0    # time since the player was last seen
+var last_known_position: Vector2 # where the guard last saw the player
+
+
 func _ready() -> void:
 	base_rotation = rotation
 	scan_target = base_rotation + deg_to_rad(scan_angle_degrees)
 
 func _physics_process(delta: float) -> void:
 	
-	turn_towards(scan_target, delta)
-	
-	if absf(angle_difference(rotation, scan_target)) < 0.01:
-		scan_target = 2.0 * base_rotation - scan_target
-
-	#guard turns red when spotted player
-	if can_see_player():
-		modulate = Color.RED
+	var sees_player := can_see_player()
+	if sees_player:
+		last_known_position = player.global_position
+		unseen_timer = 0.0
 	else:
-		modulate = Color.WHITE
+		unseen_timer += delta
+	state_timer += delta
+	
+	match state:
+		State.PATROL:
+			scan(delta)
+			if sees_player:
+				change_state(State.SUSPICIOUS)
+
+		State.SUSPICIOUS:
+			if sees_player:
+				seen_timer += delta
+			if seen_timer >= suspicion_time:
+				change_state(State.CHASE)
+			elif unseen_timer >= give_up_time:
+				change_state(State.PATROL)
+
+		State.CHASE:
+			if not sees_player:
+				change_state(State.SEARCH)
+		State.SEARCH:
+			if sees_player:
+				change_state(State.CHASE)
+			elif state_timer >= search_time:
+				change_state(State.PATROL)
 
 func can_see_player() -> bool:
 	
@@ -67,7 +101,7 @@ func _draw() -> void:
 		var angle := -half_angle + (2.0 * half_angle) * i / CONE_SEGMENTS
 		points.append(rotate_vector(Vector2(view_distance, 0), angle))
 
-	draw_colored_polygon(points, cone_color)
+	draw_colored_polygon(points, get_cone_colour())
 
 func rotate_vector(v: Vector2, angle: float) -> Vector2:
 	var c := cos(angle)
@@ -82,3 +116,25 @@ func turn_towards(target_angle: float, delta: float) -> void:
 	var difference := angle_difference(rotation, target_angle)    
 	var max_step := deg_to_rad(turn_speed_degrees) * delta        
 	rotation += clampf(difference, -max_step, max_step)
+
+func scan(delta: float) -> void:
+	turn_towards(scan_target, delta)
+	if absf(angle_difference(rotation, scan_target)) < 0.01:
+		scan_target = 2.0 * base_rotation - scan_target
+		
+func change_state(new_state: State) -> void:
+	state = new_state
+	state_timer = 0.0
+	seen_timer = 0.0
+	unseen_timer = 0.0
+	queue_redraw()                                 # redraw the cone in new colour
+	print("Guard -> ", State.keys()[new_state])    # shows current state name in Output (debug)
+
+func get_cone_colour() -> Color:
+	match state:
+		State.SUSPICIOUS, State.SEARCH:
+			return Color(1.0, 0.55, 0.1, 0.3)    
+		State.CHASE:
+			return Color(1.0, 0.15, 0.1, 0.35)   
+		_:
+			return cone_color                    

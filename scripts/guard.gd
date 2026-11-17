@@ -5,6 +5,9 @@ extends CharacterBody2D
 @export_range(0, 180) var view_angle_degrees: float = 90.0  
 @onready var sight_ray: RayCast2D = $SightRay
 
+@export var cone_color: Color = Color(1.0, 0.85, 0.3, 0.25)  
+const CONE_SEGMENTS := 16   #how many segments used to split the sector
+
 func _physics_process(_delta: float) -> void:
 	#debug test, turns red when the player is seen.
 	if can_see_player():
@@ -36,4 +39,16 @@ func can_see_player() -> bool:
 	if sight_ray.is_colliding() and sight_ray.get_collider() != player:
 		return false   #returns false if something is blocking the raycast (that isnt the player)
 
-	return true   # passed every check
+	return true   #passed every check
+	
+func _draw() -> void:
+	var half_angle := deg_to_rad(view_angle_degrees / 2.0)
+	var points := PackedVector2Array()
+	points.append(Vector2.ZERO)   # tip of the slice: the guard's centre
+
+	# Walk from one edge of the cone to the other, adding a point on the circle each step.
+	for i in range(CONE_SEGMENTS + 1):
+		var angle := -half_angle + (2.0 * half_angle) * i / CONE_SEGMENTS
+		points.append(Vector2(cos(angle), sin(angle)) * view_distance)
+
+	draw_colored_polygon(points, cone_color)

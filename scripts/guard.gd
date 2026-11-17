@@ -9,6 +9,7 @@ extends CharacterBody2D
 const CONE_SEGMENTS := 16   #how many segments used to split the sector
 
 
+
 func _physics_process(_delta: float) -> void:
 	#debug test, turns red when the player is seen.
 	if can_see_player():
@@ -50,6 +51,14 @@ func _draw() -> void:
 	# Walk from one edge of the cone to the other, adding a point on the circle each step.
 	for i in range(CONE_SEGMENTS + 1):
 		var angle := -half_angle + (2.0 * half_angle) * i / CONE_SEGMENTS
-		points.append(Vector2(cos(angle), sin(angle)) * view_distance)
+		points.append(rotate_vector(Vector2(view_distance, 0), angle))
 
 	draw_colored_polygon(points, cone_color)
+
+func rotate_vector(v: Vector2, angle: float) -> Vector2:
+	var c := cos(angle)
+	var s := sin(angle)
+	return Vector2(
+		c * v.x - s * v.y,   #row 1
+		s * v.x + c * v.y    #roe 2
+	)

@@ -27,10 +27,13 @@ var seen_timer: float = 0.0      # total time the player has been seen (for susp
 var unseen_timer: float = 0.0    # time since the player was last seen
 var last_known_position: Vector2 # where the guard last saw the player
 
+@export var walk_speed: float = 50.0   #speed when returning to post or searching
+var home_position: Vector2             # where the guard was placed, so it can return after a chase
 
 func _ready() -> void:
 	base_rotation = rotation
 	scan_target = base_rotation + deg_to_rad(scan_angle_degrees)
+	home_position = global_position
 
 func _physics_process(delta: float) -> void:
 	
@@ -44,11 +47,15 @@ func _physics_process(delta: float) -> void:
 	
 	match state:
 		State.PATROL:
-			scan(delta)
+			# walks back to post and starts looking around again
+			if move_towards(home_position, walk_speed):
+				scan(delta)
 			if sees_player:
 				change_state(State.SUSPICIOUS)
 
 		State.SUSPICIOUS:
+			#stops and looks at where player was last seen
+			turn_towards((last_known_position - global_position).angle(), delta)
 			if sees_player:
 				seen_timer += delta
 			if seen_timer >= suspicion_time:
@@ -57,9 +64,15 @@ func _physics_process(delta: float) -> void:
 				change_state(State.PATROL)
 
 		State.CHASE:
+			#run towards the player
+			move_towards(player.global_position, chase_speed)
 			if not sees_player:
 				change_state(State.SEARCH)
+
 		State.SEARCH:
+			#Go to where the player was last seen, then spins slodwly to look around.
+			if move_towards(last_known_position, walk_speed):
+				rotation += deg_to_rad(turn_speed_degrees) * delta
 			if sees_player:
 				change_state(State.CHASE)
 			elif state_timer >= search_time:
@@ -127,8 +140,8 @@ func change_state(new_state: State) -> void:
 	state_timer = 0.0
 	seen_timer = 0.0
 	unseen_timer = 0.0
-	queue_redraw()                                 # redraw the cone in new colour
-	print("Guard -> ", State.keys()[new_state])    # shows current state name in Output (debug)
+	queue_redraw()                                 #redraw the cone in new colour
+	print("Guard -> ", State.keys()[new_state])    #shows current state name in Output (debug)
 
 func get_cone_colour() -> Color:
 	match state:
@@ -138,3 +151,13 @@ func get_cone_colour() -> Color:
 			return Color(1.0, 0.15, 0.1, 0.35)   
 		_:
 			return cone_color                    
+
+func move_towards(target: Vector2, speed: float) -> bool:
+	var to_target := target - global_position
+	if to_target.length() < 4.0: #allows a margin, guard doesnt have to be directly on tile
+		velocity = Vector2.ZERO
+		return true
+	velocity = to_target.normalized() * speed   
+	rotation = to_target.angle() #faces direction guard is walking in
+	move_and_slide()
+	return false

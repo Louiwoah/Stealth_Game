@@ -30,10 +30,15 @@ var last_known_position: Vector2 # where the guard last saw the player
 @export var walk_speed: float = 50.0   #speed when returning to post or searching
 var home_position: Vector2             # where the guard was placed, so it can return after a chase
 
+@onready var state_icon: Sprite2D = $StateIcon
+const ICON_QUESTION := 3 
+const ICON_EXCLAIM := 23
+
 func _ready() -> void:
 	base_rotation = rotation
 	scan_target = base_rotation + deg_to_rad(scan_angle_degrees)
 	home_position = global_position
+	update_icon()
 
 func _physics_process(delta: float) -> void:
 	
@@ -77,6 +82,9 @@ func _physics_process(delta: float) -> void:
 				change_state(State.CHASE)
 			elif state_timer >= search_time:
 				change_state(State.PATROL)
+				
+	state_icon.global_rotation = 0.0
+	state_icon.global_position = global_position + Vector2(0, -14)
 
 func can_see_player() -> bool:
 	
@@ -140,7 +148,8 @@ func change_state(new_state: State) -> void:
 	state_timer = 0.0
 	seen_timer = 0.0
 	unseen_timer = 0.0
-	queue_redraw()                                 #redraw the cone in new colour
+	queue_redraw()   
+	update_icon()                              #redraw the cone in new colour
 	print("Guard -> ", State.keys()[new_state])    #shows current state name in Output (debug)
 
 func get_cone_colour() -> Color:
@@ -161,3 +170,14 @@ func move_towards(target: Vector2, speed: float) -> bool:
 	rotation = to_target.angle() #faces direction guard is walking in
 	move_and_slide()
 	return false
+
+func update_icon() -> void:
+	match state:
+		State.SUSPICIOUS, State.SEARCH:
+			state_icon.visible = true
+			state_icon.frame = ICON_QUESTION
+		State.CHASE:
+			state_icon.visible = true
+			state_icon.frame = ICON_EXCLAIM
+		_:
+			state_icon.visible = false

@@ -8,10 +8,24 @@ extends CharacterBody2D
 @export var cone_color: Color = Color(1.0, 0.85, 0.3, 0.25)  
 const CONE_SEGMENTS := 16   #how many segments used to split the sector
 
+@export var turn_speed_degrees: float = 90.0   
+@export var scan_angle_degrees: float = 60.0   # how far the guard looks away from its original direction
 
+var base_rotation: float    # the direction the guard was placed facing
+var scan_target: float      # the angle the guard is going to turn to
 
-func _physics_process(_delta: float) -> void:
-	#debug test, turns red when the player is seen.
+func _ready() -> void:
+	base_rotation = rotation
+	scan_target = base_rotation + deg_to_rad(scan_angle_degrees)
+
+func _physics_process(delta: float) -> void:
+	
+	turn_towards(scan_target, delta)
+	
+	if absf(angle_difference(rotation, scan_target)) < 0.01:
+		scan_target = 2.0 * base_rotation - scan_target
+
+	#guard turns red when spotted player
 	if can_see_player():
 		modulate = Color.RED
 	else:
@@ -62,3 +76,9 @@ func rotate_vector(v: Vector2, angle: float) -> Vector2:
 		c * v.x - s * v.y,   #row 1
 		s * v.x + c * v.y    #roe 2
 	)
+
+
+func turn_towards(target_angle: float, delta: float) -> void:
+	var difference := angle_difference(rotation, target_angle)    
+	var max_step := deg_to_rad(turn_speed_degrees) * delta        
+	rotation += clampf(difference, -max_step, max_step)

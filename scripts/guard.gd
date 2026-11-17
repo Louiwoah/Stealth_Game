@@ -17,15 +17,18 @@ var scan_target: float      # the angle the guard is going to turn to
 enum State { PATROL, SUSPICIOUS, CHASE, SEARCH }
 
 @export var chase_speed: float = 90.0       
-@export var suspicion_time: float = 1.0     #time that the player needs to be seen for to initiate chase 
-@export var give_up_time: float = 2.0       #seconds unseen before a suspicious guard goes back to patrol
 @export var search_time: float = 8.0        #time spent searching before going back on patrol
 
 var state: State = State.PATROL
 var state_timer: float = 0.0     # time spent in the current state
-var seen_timer: float = 0.0      # total time the player has been seen (for suspicion_time)
-var unseen_timer: float = 0.0    # time since the player was last seen
 var last_known_position: Vector2 # where the guard last saw the player
+
+@export var detect_time_near: float = 0.3    # seconds to fill the meter at point-blank range
+@export var detect_time_far: float = 1.5     # seconds to fill it at the edge of vision
+@export var meter_drain_time: float = 2.0    # seconds for a full meter to empty when unseen
+
+var detection: float = 0.0   # the detection meter: 0 = not noticed, 1 = fully detected
+
 
 @export var walk_speed: float = 50.0   #speed when returning to post or searching
 var home_position: Vector2             # where the guard was placed, so it can return after a chase
@@ -51,9 +54,7 @@ func _physics_process(delta: float) -> void:
 	var sees_player := can_see_player()
 	if sees_player:
 		last_known_position = player.global_position
-		unseen_timer = 0.0
-	else:
-		unseen_timer += delta
+	update_detection(sees_player, delta)   # fill or drain the meter this frame
 	state_timer += delta
 	
 	match state:
@@ -65,13 +66,11 @@ func _physics_process(delta: float) -> void:
 				change_state(State.SUSPICIOUS)
 
 		State.SUSPICIOUS:
-			#stops and looks at where player was last seen
+			#stops and looks around for player
 			turn_towards((last_known_position - global_position).angle(), delta)
-			if sees_player:
-				seen_timer += delta
-			if seen_timer >= suspicion_time:
-				change_state(State.CHASE)
-			elif unseen_timer >= give_up_time:
+			if detection >= 1.0:
+				change_state(State.CHASE) 
+			elif detection <= 0.0:
 				change_state(State.PATROL)
 
 		State.CHASE:
@@ -91,6 +90,10 @@ func _physics_process(delta: float) -> void:
 				
 	state_icon.global_rotation = 0.0
 	state_icon.global_position = global_position + Vector2(0, -14)
+	if state == State.SUSPICIOUS:
+		state_icon.modulate = Color.WHITE.lerp(Color.RED, detection)
+	else:
+		state_icon.modulate = Color.WHITE
 
 func can_see_player() -> bool:
 	
@@ -152,8 +155,6 @@ func scan(delta: float) -> void:
 func change_state(new_state: State) -> void:
 	state = new_state
 	state_timer = 0.0
-	seen_timer = 0.0
-	unseen_timer = 0.0
 	queue_redraw()   
 	update_icon()                              #redraw the cone in new colour
 	print("Guard -> ", State.keys()[new_state])    #shows current state name in Output (debug)
@@ -198,3 +199,14 @@ func update_icon() -> void:
 			state_icon.frame = ICON_EXCLAIM
 		_:
 			state_icon.visible = false
+
+func update_detection(sees_player: bool, delta: float) -> void:
+	if sees_player:
+		var distance := global_position.distance_to(player.global_position)
+		var closeness := 1.0 - clampf(distance / view_distance, 0.0, 1.0)   
+		closeness = closeness * closeness             
+		var fill_rate := lerpf(1.0 / detect_time_far, 1.0 / detect_time_near, closeness)
+		detection += fill_rate * delta
+	else:
+		detection -= delta / meter_drain_time
+	detection = clampf(detection, 0.0, 1.0)

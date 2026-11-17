@@ -36,6 +36,6 @@ tile_set = SubResource("TileSet_cbqwp")
 position = Vector2(120, 104)
 
 [node name="guard" parent="." unique_id=331906616 node_paths=PackedStringArray("player") instance=ExtResource("3_cbqwp")]
-position = Vector2(360, 72)
+position = Vector2(343, 72)
 rotation = 3.1415927
 player = NodePath("../Player")

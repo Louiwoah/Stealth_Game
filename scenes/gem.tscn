@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://dlr6fsamf6ue7"]
+
+[ext_resource type="Script" uid="uid://b7mplc28r4sji" path="res://scripts/gem.gd" id="1_mpwtx"]
+[ext_resource type="Texture2D" uid="uid://kwfljfedgwq5" path="res://assets/stealth-tiles.png" id="2_bhq7q"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_4iv5q"]
+radius = 6.0
+
+[node name="gem" type="Area2D" unique_id=755342758]
+script = ExtResource("1_mpwtx")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=245111009]
+shape = SubResource("CircleShape2D_4iv5q")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1742464013]
+texture = ExtResource("2_bhq7q")
+hframes = 20
+vframes = 2
+frame = 4

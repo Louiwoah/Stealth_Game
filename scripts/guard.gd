@@ -1,12 +1,12 @@
 extends CharacterBody2D
 
-@export var player: Node2D
+@export var player: CharacterBody2D
 @export var view_distance: float = 96.0       
 @export_range(0, 180) var view_angle_degrees: float = 90.0  
 @onready var sight_ray: RayCast2D = $SightRay
 
 @export var cone_color: Color = Color(1.0, 0.85, 0.3, 0.25)  
-const CONE_SEGMENTS := 16   #how many segments used to split the sector
+const CONE_SEGMENTS := 64   #how many segments used to split the sector
 
 @export var turn_speed_degrees: float = 90.0   
 @export var scan_angle_degrees: float = 60.0   # how far the guard looks away from its original direction
@@ -42,6 +42,8 @@ var path := PackedVector2Array()         # the waypoints still to walk through
 var path_target := Vector2.INF 
 
 @export var move_turn_speed_degrees: float = 360.0
+
+var cone_points := PackedVector2Array()  
 
 func _ready() -> void:
 	base_rotation = rotation
@@ -94,6 +96,8 @@ func _physics_process(delta: float) -> void:
 		state_icon.modulate = Color.WHITE.lerp(Color.RED, detection)
 	else:
 		state_icon.modulate = Color.WHITE
+		
+	update_cone()
 
 func can_see_player() -> bool:
 	
@@ -122,16 +126,8 @@ func can_see_player() -> bool:
 	return true   #passed every check
 	
 func _draw() -> void:
-	var half_angle := deg_to_rad(view_angle_degrees / 2.0)
-	var points := PackedVector2Array()
-	points.append(Vector2.ZERO)   # tip of the slice: the guard's centre
-
-	# Walk from one edge of the cone to the other, adding a point on the circle each step.
-	for i in range(CONE_SEGMENTS + 1):
-		var angle := -half_angle + (2.0 * half_angle) * i / CONE_SEGMENTS
-		points.append(rotate_vector(Vector2(view_distance, 0), angle))
-
-	draw_colored_polygon(points, get_cone_colour())
+	if cone_points.size() >= 3:
+		draw_colored_polygon(cone_points, get_cone_colour())
 
 func rotate_vector(v: Vector2, angle: float) -> Vector2:
 	var c := cos(angle)
@@ -210,3 +206,28 @@ func update_detection(sees_player: bool, delta: float) -> void:
 	else:
 		detection -= delta / meter_drain_time
 	detection = clampf(detection, 0.0, 1.0)
+
+func update_cone() -> void:
+	var space := get_world_2d().direct_space_state       
+	var half_angle := deg_to_rad(view_angle_degrees / 2.0)
+	var ignore: Array[RID] = [get_rid()]                 
+	if player != null:
+		ignore.append(player.get_rid())                  
+
+	cone_points.clear()
+	cone_points.append(Vector2.ZERO)                     
+	for i in range(CONE_SEGMENTS + 1):
+		var angle := -half_angle + (2.0 * half_angle) * i / CONE_SEGMENTS
+		var local_end := rotate_vector(Vector2(view_distance, 0), angle)
+
+		
+		var query := PhysicsRayQueryParameters2D.create(global_position, to_global(local_end))
+		query.exclude = ignore
+		var hit := space.intersect_ray(query)
+
+		if hit.is_empty():
+			cone_points.append(local_end)                
+		else:
+			cone_points.append(to_local(hit.position)) 
+
+	queue_redraw()

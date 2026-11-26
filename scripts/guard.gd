@@ -1,5 +1,7 @@
 extends CharacterBody2D
 
+var game_over := false
+
 @export var player: CharacterBody2D
 @export var view_distance: float =96  
 @export_range(0, 180) var view_angle_degrees: float = 90.0  
@@ -45,11 +47,18 @@ var path_target := Vector2.INF
 
 var cone_points := PackedVector2Array()  
 
+signal caught_player  #sent out when the guard catches the player
+@export var catch_distance: float = 14.0  
+
+
 func _ready() -> void:
 	base_rotation = rotation
 	scan_target = base_rotation + deg_to_rad(scan_angle_degrees)
 	home_position = global_position
 	update_icon()
+	
+	add_to_group("guards")
+
 
 func _physics_process(delta: float) -> void:
 	
@@ -76,9 +85,10 @@ func _physics_process(delta: float) -> void:
 				change_state(State.PATROL)
 
 		State.CHASE:
-			#run towards the player
 			move_towards(player.global_position, chase_speed, delta)
-			if not sees_player:
+			if global_position.distance_to(player.global_position) < catch_distance:
+				caught_player.emit()
+			elif not sees_player:
 				change_state(State.SEARCH)
 
 		State.SEARCH:
@@ -231,3 +241,16 @@ func update_cone() -> void:
 			cone_points.append(to_local(hit.position)) 
 
 	queue_redraw()
+
+func _on_player_caught() -> void:
+	if game_over:
+		return
+	game_over = true
+	print("Caught!")
+	get_tree().paused = true
+	restart_level(1.5)
+
+func restart_level(after_seconds: float) -> void:
+	await get_tree().create_timer(after_seconds).timeout
+	get_tree().paused = false
+	get_tree().reload_current_scene()

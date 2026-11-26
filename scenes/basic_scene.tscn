@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://c12w1gki8chnc" path="res://scripts/level_map.gd" id="2_qgwn0"]
 [ext_resource type="PackedScene" uid="uid://cy6fc742pktax" path="res://scenes/guard.tscn" id="3_cbqwp"]
 [ext_resource type="PackedScene" uid="uid://dlr6fsamf6ue7" path="res://scenes/gem.tscn" id="6_8dmqv"]
+[ext_resource type="PackedScene" uid="uid://cowl5kqaoekg8" path="res://scenes/exit.tscn" id="6_dphho"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_86od8"]
 texture = ExtResource("1_eeskx")
@@ -37,9 +38,6 @@ tile_map_data = PackedByteArray("AAAEAAAAAAACAAAAAAAFAAAAAAACAAAAAAACAAAAAAACAAA
 tile_set = SubResource("TileSet_cbqwp")
 script = ExtResource("2_qgwn0")
 
-[node name="Player" parent="." unique_id=1425113821 groups=["player"] instance=ExtResource("2_86od8")]
-position = Vector2(120, 104)
-
 [node name="guard" parent="." unique_id=331906616 node_paths=PackedStringArray("player", "level") instance=ExtResource("3_cbqwp")]
 position = Vector2(343, 72)
 rotation = 3.1415927
@@ -56,3 +54,9 @@ gem_frame = 5
 [node name="gem3" parent="." unique_id=383959764 instance=ExtResource("6_8dmqv")]
 position = Vector2(39, 104)
 gem_frame = 24
+
+[node name="Exit" parent="." unique_id=2067909974 instance=ExtResource("6_dphho")]
+position = Vector2(136, 104)
+
+[node name="Player" parent="." unique_id=1425113821 instance=ExtResource("2_86od8")]
+position = Vector2(137, 104)

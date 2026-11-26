@@ -1,7 +1,7 @@
 extends CharacterBody2D
 
 @export var player: CharacterBody2D
-@export var view_distance: float = 96.0       
+@export var view_distance: float =96  
 @export_range(0, 180) var view_angle_degrees: float = 90.0  
 @onready var sight_ray: RayCast2D = $SightRay
 
